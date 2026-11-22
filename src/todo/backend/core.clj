@@ -8,7 +8,8 @@
             ;; --- CORS (Fase 4) ---
             [ring.middleware.cors :refer [wrap-cors]]
             ;; ----------------------------
-            [todo.backend.handler :as handler])
+            [todo.backend.handler :as handler]
+            [todo.backend.db :as db])
   (:gen-class))
 
 ;; --- 1. Definição das Rotas ---
@@ -67,4 +68,5 @@
   ;; Permite passar a porta como argumento (ex: clj -M:run 8080)
   ;; ou usa "3000" como padrão.
   (let [port (Integer/parseInt (or (first args) "3000"))]
+    (db/initialize-database!)
     (start-server port)))

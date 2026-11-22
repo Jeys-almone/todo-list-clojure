@@ -16,6 +16,10 @@
   ;; Libera o navegador (porta 8000) a chamar a API (porta 3000)
   ring-cors/ring-cors     {:mvn/version "0.1.13"}
 
+  ;; --- Banco de Dados ---
+  seancorfield/next.jdbc  {:mvn/version "1.2.659"}
+  org.xerial/sqlite-jdbc  {:mvn/version "3.45.3.0"}
+
   ;; --- Dependências do Frontend (ClojureScript) ---
   ;; O compilador de ClojureScript (mesma versão do npm!)
   thheller/shadow-cljs    {:mvn/version "2.28.23"}

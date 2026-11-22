@@ -61,7 +61,9 @@
 (defn todo-list []
   [:ul
    (for [todo (:todos @app-state)]
-     ^{:key (:id todo)} [:li (:title todo)])])
+     ^{:key (:todos/id todo)}
+     [:li 
+      (:todos/title todo)])])
 
 (defn app []
   [:div
