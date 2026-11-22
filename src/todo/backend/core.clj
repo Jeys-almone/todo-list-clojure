@@ -5,6 +5,8 @@
             [ring.middleware.json :refer [wrap-json-response wrap-json-body]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
+            ;; --- CORS (Fase 4) ---
+            [ring.middleware.cors :refer [wrap-cors]]
             ;; ----------------------------
             [todo.backend.handler :as handler])
   (:gen-class))
@@ -29,7 +31,14 @@
    ;; --- A "Linha de Montagem" de Middlewares ---
    ;; A requisição percorre o vetor DE CIMA PARA BAIXO até chegar
    ;; ao handler; a resposta volta DE BAIXO PARA CIMA.
-   {:middleware [;; 1. Converte a *resposta* (nosso mapa) em JSON
+   {:middleware [;; 0. CORS: precisa ser o PRIMEIRO, para responder ao
+                 ;;    "preflight" (OPTIONS) antes de chegar nas rotas
+                 [wrap-cors
+                  :access-control-allow-origin  [#"http://localhost:8000"]
+                  :access-control-allow-methods [:get :post :put :delete]
+                  :access-control-allow-headers ["Content-Type"]]
+
+                 ;; 1. Converte a *resposta* (nosso mapa) em JSON
                  wrap-json-response
 
                  ;; 2. Converte o *corpo* da requisição (JSON)

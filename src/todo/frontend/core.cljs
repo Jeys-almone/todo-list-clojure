@@ -1,24 +1,49 @@
 (ns todo.frontend.core
   (:require [reagent.core :as r]
             [reagent.dom.client :as rdom]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cljs.core.async :refer [go]]
+            [cljs.core.async.interop :refer-macros [<p!]]))
 
-;; Estado da aplicação: um mapa dentro de um atom reativo
-(defonce app-state (r/atom {:next-id    1
-                            :input-text ""
+;; Endereço do backend
+(def api-url "http://localhost:3000/api")
+
+;; Estado: agora os todos vêm da API, então não precisamos mais do :next-id
+(defonce app-state (r/atom {:input-text ""
                             :todos      []}))
 
-(defn adicionar-todo-local []
-  (let [texto (:input-text @app-state)]
-    (when-not (str/blank? texto)
-      (swap! app-state
-             (fn [estado]
-               (-> estado
-                   (update :todos conj {:id        (:next-id estado)
-                                        :title     texto
-                                        :completed false})
-                   (update :next-id inc)
-                   (assoc :input-text "")))))))
+;; Faz a requisição e converte o JSON da resposta em mapa Clojure
+(defn fetch-json [url options]
+  (-> (js/fetch url (clj->js options))
+      (.then (fn [resposta]
+               (if (.-ok resposta)
+                 (.json resposta)
+                 (throw (js/Error. (str "Erro HTTP " (.-status resposta)))))))
+      (.then (fn [dados]
+               (js->clj dados :keywordize-keys true)))))
+
+;; GET /api/todos
+(defn get-todos []
+  (swap! app-state assoc :loading true :error nil)
+  (go
+    (try
+      (let [resposta (<p! (fetch-json (str api-url "/todos") {:method "GET"}))]
+        (swap! app-state assoc :todos (:todos resposta) :loading false))
+      (catch js/Error e
+        (swap! app-state assoc :error (.-message (or (ex-cause e) e)) :loading false)))))
+
+;; POST /api/todos e depois recarrega a lista
+(defn create-todo [todo-data]
+  (swap! app-state assoc :loading true :error nil)
+  (go
+    (try
+      (<p! (fetch-json (str api-url "/todos")
+                       {:method  "POST"
+                        :headers {"Content-Type" "application/json"}
+                        :body    (js/JSON.stringify (clj->js todo-data))}))
+      (get-todos)
+      (catch js/Error e
+        (swap! app-state assoc :error (.-message (or (ex-cause e) e)) :loading false)))))
 
 (defn todo-form []
   [:div
@@ -26,7 +51,12 @@
             :placeholder "O que precisa ser feito?"
             :value       (:input-text @app-state)
             :on-change   #(swap! app-state assoc :input-text (-> % .-target .-value))}]
-   [:button {:on-click #(adicionar-todo-local)} "Adicionar"]])
+   [:button {:on-click (fn []
+                         (let [texto (:input-text @app-state)]
+                           (when-not (str/blank? texto)
+                             (create-todo {:title texto})
+                             (swap! app-state assoc :input-text ""))))}
+    "Adicionar"]])
 
 (defn todo-list []
   [:ul
@@ -36,10 +66,14 @@
 (defn app []
   [:div
    [:h1 "Meu Todo List"]
+   [:p "Conectado à API em " api-url]
+   (when-let [erro (:error @app-state)]
+     [:p {:style {:color "red"}} "Erro: " erro])
    [todo-form]
    [todo-list]])
 
 (defonce root (rdom/create-root (js/document.getElementById "app")))
 
 (defn ^:dev/after-load init []
-  (rdom/render root [app]))
+  (rdom/render root [app])
+  (get-todos))
