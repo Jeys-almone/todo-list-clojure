@@ -45,8 +45,32 @@
       (catch js/Error e
         (swap! app-state assoc :error (.-message (or (ex-cause e) e)) :loading false)))))
 
+(defn toggle-todo
+  "Chama a API para alternar o status de um todo."
+  [id]
+  (go
+    (try
+      (<p! (fetch-json (str api-url "/todos/" id "/toggle")
+                       {:method "POST"}))
+      ;; Se funcionou, recarrega a lista inteira
+      (get-todos)
+      (catch js/Error e
+        (swap! app-state assoc :error (.-message e) :loading false)))))
+
+(defn delete-todo
+  "Chama a API para remover um todo."
+  [id]
+  (go
+    (try
+      (<p! (fetch-json (str api-url "/todos/" id)
+                       {:method "DELETE"}))
+      ;; Se funcionou, recarrega a lista
+      (get-todos)
+      (catch js/Error e
+        (swap! app-state assoc :error (.-message e) :loading false)))))
+
 (defn todo-form []
-  [:div
+  [:div.todo-input
    [:input {:type        "text"
             :placeholder "O que precisa ser feito?"
             :value       (:input-text @app-state)
@@ -59,14 +83,32 @@
     "Adicionar"]])
 
 (defn todo-list []
-  [:ul
+  [:ul.todo-list
    (for [todo (:todos @app-state)]
      ^{:key (:todos/id todo)}
-     [:li 
-      (:todos/title todo)])])
+
+     ;; 1. Classe CSS 'completed' quando o status for 1
+     [:li.todo-item {:class (when (= 1 (:todos/completed todo)) "completed")}
+
+      ;; 2. O Checkbox
+      [:input.todo-checkbox
+       {:type "checkbox"
+        ;; 3. A CONVERSÃO: 0/1 -> booleano de verdade
+        :checked (not= 0 (:todos/completed todo))
+        ;; 4. O evento chama nossa nova função de API
+        :on-change #(toggle-todo (:todos/id todo))}]
+
+      ;; 5. O título (agora dentro de um span, para o CSS)
+      [:span.todo-title (:todos/title todo)]
+      
+      ;; 6. Botão de delete com confirmação
+      [:button.delete-btn
+       {:on-click #(when (js/confirm "Remover esta tarefa?")
+                     (delete-todo (:todos/id todo)))}
+       "X"]])])
 
 (defn app []
-  [:div
+  [:div.todo-app
    [:h1 "Meu Todo List"]
    [:p "Conectado à API em " api-url]
    (when-let [erro (:error @app-state)]
