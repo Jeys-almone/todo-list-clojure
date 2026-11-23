@@ -2,7 +2,7 @@
 
 **Alunos(as):** César Roberto Ferreira Cardoso Filho e Jeysraelly Almone Da Silva
 
-> **Vídeo de Apresentação:** [Assista à demonstração do projeto no YouTube](https://drive.google.com/file/d/11dKwR37y2LM7eprN_1aONPFZGSqmVL9F/view?usp=sharing)
+> **Vídeo de Apresentação:** [Assista à demonstração do projeto!](https://drive.google.com/file/d/11dKwR37y2LM7eprN_1aONPFZGSqmVL9F/view?usp=sharing)
 
 **Tutorial original:** [Tutorial Clojure/ClojureScript: Construindo uma Aplicação
 Persistente e Reativa](https://lambdageo-edu.github.io/lambdageo-tutorials/clojure/)
